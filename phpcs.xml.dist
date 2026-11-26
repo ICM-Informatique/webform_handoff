@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="webform_handoff">
+  <description>Drupal coding standards for Webform Handoff.</description>
+  <file>.</file>
+  <arg name="extensions" value="php,module,inc,install,profile,theme,yml"/>
+  <arg value="sp"/>
+  <exclude-pattern>*/.github/*</exclude-pattern>
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <rule ref="Drupal"/>
+  <rule ref="DrupalPractice"/>
+</ruleset>
