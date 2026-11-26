@@ -1,0 +1,9 @@
+' Shared style for the Webform Handoff diagrams.
+' Stereotype circles: one letter and one colour per kind of code element.
+hide empty members
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam defaultFontName Arial
+skinparam noteBackgroundColor #FFFDE7
+skinparam noteBorderColor #BDB76B

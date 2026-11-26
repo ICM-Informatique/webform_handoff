@@ -1,0 +1,60 @@
+@startuml submission-flow
+!include style.puml
+title Webform Handoff: submission with results disabled
+autonumber
+
+actor Visitor
+participant "Webform\nsubmission form" as Form
+participant "HandoffWebformHandler" as Handler
+participant "HandoffContext" as Context
+participant "Email handler\nrecipient" as Recipient
+participant "Email handler\nacknowledgement" as Ack
+participant "TrackingMailManager\nand mailAlter" as Mail
+participant "HandoffFinalizer\nsubmission insert hook" as Finalizer
+database "Handoff\nrecords" as Store
+participant "Cron" as Cron
+
+Visitor -> Form : submit, with uploaded files
+Form -> Handler : preSave
+Handler -> Context : start, returns the reference
+note right of Context
+  The reference is available as a token
+  in both emails and in the confirmation.
+end note
+
+Form -> Recipient : postSave
+Recipient -> Mail : mail
+Mail -> Mail : mailAlter marks the message\nand empties the core error message
+Mail -> Context : record the recipient result
+
+Form -> Ack : postSave
+Ack -> Mail : mail
+alt recipient email sent
+  Mail -> Context : record the acknowledgement result
+else recipient email failed
+  Mail -> Context : cancel the acknowledgement,\nkeep its address in memory only
+end
+
+Form -> Finalizer : webform_submission insert hook
+Finalizer -> Finalizer : delete uploaded files,\non disk and in the database, in all cases
+alt recipient email failed
+  Finalizer -> Visitor : failure email instead of the acknowledgement
+  Finalizer -> Store : save the record, alert pending
+  Finalizer -> Finalizer : send the alert to the site owner
+  Finalizer -> Store : update the alert status
+else recipient email sent
+  Finalizer -> Store : save the record
+end
+Finalizer -> Context : forget the visitor address
+
+Form -> Handler : preprocessConfirmation
+alt recipient email failed
+  Handler -> Visitor : failure screen with the reference,\ncontact details and a print button
+else recipient email sent
+  Handler -> Visitor : normal confirmation with the reference
+end
+
+== Later ==
+Cron -> Store : retry pending alerts until they are sent
+Cron -> Store : purge records older than the retention period
+@enduml

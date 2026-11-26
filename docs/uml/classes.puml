@@ -1,0 +1,129 @@
+@startuml classes
+!include style.puml
+title Webform Handoff: classes and services
+
+package "Webform 6.3 (not modified)" {
+  abstract class "WebformHandlerBase" as WebformHandlerBase
+  class "EmailWebformHandler" as EmailWebformHandler
+}
+
+package "Drupal core (not modified)" {
+  interface "MailManagerInterface" as MailManagerInterface
+  class "MailManager\nservice plugin.manager.mail" as MailManager
+  MailManager ..|> MailManagerInterface
+}
+
+package "webform_handoff" {
+
+  class "HandoffWebformHandler\n@WebformHandler id = handoff" as Handler <<(H,#3D8BEB) plugin>> {
+    - recipient_handler : email handler ID
+    - acknowledgement_handler : email handler ID, optional
+    - failure_display : inline
+    + buildConfigurationForm()
+    + validateConfigurationForm()
+    + preSave()
+    + preprocessConfirmation()
+    + getSummary()
+  }
+
+  class "HandoffContext" as Context <<(S,#7FB2E5) service>> {
+    in-memory state for the current request,
+    keyed by submission UUID
+    --
+    + start() : reference
+    + getReference() : reference or NULL
+    + recordMailResult()
+    + cancelAcknowledgement()
+    + getOutcome() : HandoffOutcome
+  }
+
+  class "ReferenceGenerator" as Generator <<(S,#7FB2E5) service>> {
+    + generate() : reference
+  }
+
+  class "TrackingMailManager\ndecorates plugin.manager.mail" as Tracking <<(S,#7FB2E5) service>> {
+    + mail() : message array
+    other methods delegate to the inner service
+  }
+
+  class "HandoffHooks" as Hooks <<(K,#A57FDB) hooks>> {
+    + mailAlter()
+    + webformSubmissionInsert()
+    + tokenInfo()
+    + tokens()
+    + mail()
+    + cron()
+    + theme()
+  }
+
+  class "HandoffFinalizer" as Finalizer <<(S,#7FB2E5) service>> {
+    + finalize()
+  }
+
+  class "UploadedFileCleaner" as Cleaner <<(S,#7FB2E5) service>> {
+    + deleteUploadedFiles() : file outcomes
+  }
+
+  class "AlertSender" as Alert <<(S,#7FB2E5) service>> {
+    + send() : bool
+    + retryPending()
+  }
+
+  class "HandoffPurger" as Purger <<(S,#7FB2E5) service>> {
+    + purgeExpired()
+  }
+
+  class "Handoff" as Handoff <<(E,#E69F00) content entity>>
+
+  class "HandoffExporter" as Exporter <<(S,#7FB2E5) service>> {
+    + export() : CSV or JSON lines
+  }
+
+  class "HandoffExportController" as ExportController <<(R,#7CB342) route>>
+  class "HandoffDashboardController" as Dashboard <<(R,#7CB342) route>>
+  class "HandoffCommands" as Drush <<(D,#F4A6E8) drush>>
+  class "SettingsForm" as SettingsForm <<(F,#7CB342) form>>
+}
+
+Handler --|> WebformHandlerBase
+Tracking ..|> MailManagerInterface
+Tracking o--> "1" MailManager : inner
+EmailWebformHandler ..> Tracking : mail()
+
+Handler ..> Context : start()
+Context ..> Generator
+Hooks ..> Context
+Tracking ..> Context : recordMailResult()
+Hooks ..> Finalizer : on insert
+Finalizer ..> Context : getOutcome()
+Finalizer ..> Cleaner
+Finalizer ..> Alert
+Finalizer ..> Handoff : creates
+Alert ..> Handoff : updates
+Purger ..> Handoff : deletes
+Hooks ..> Alert : cron
+Hooks ..> Purger : cron
+Exporter ..> Handoff
+ExportController ..> Exporter
+Drush ..> Exporter
+Dashboard ..> Handoff
+
+note right of Tracking
+  Records the real result of the Webform
+  emails marked by mailAlter.
+  Never records addresses.
+end note
+
+note bottom of Hooks
+  webformSubmissionInsert runs after all postSave
+  methods, even when results are disabled:
+  the end of processing does not depend on
+  handler weights.
+end note
+
+note right of Handler
+  Requires an inline confirmation.
+  First version: failure_display = inline only.
+  A dedicated failure page may be added later.
+end note
+@enduml

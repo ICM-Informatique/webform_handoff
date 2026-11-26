@@ -1,0 +1,35 @@
+@startuml entity-handoff
+!include style.puml
+title Webform Handoff: delivery record, without personal data
+
+class "Handoff" as Handoff <<(E,#E69F00) content entity>> {
+  <color:#D32F2F>*</color> id : integer [1]
+  <color:#D32F2F>*</color> reference : string, unique [1]
+  <color:#D32F2F>*</color> webform : webform ID [1]
+  <color:#D32F2F>*</color> created : timestamp [1]
+  <color:#D32F2F>*</color> recipient_status : sent, failed or not_sent [1]
+  <color:#D32F2F>*</color> acknowledgement_status : sent, failed, cancelled, not_sent or not_configured [1]
+  <color:#D32F2F>*</color> visitor_notice_shown : boolean [1]
+  <color:#D32F2F>*</color> visitor_failure_email : not_applicable, sent or failed [1]
+  <color:#D32F2F>*</color> alert_status : not_applicable, pending or sent [1]
+  <color:#D32F2F>*</color> alert_attempts : integer [1]
+  <color:transparent>*</color> alert_last_attempt : timestamp [0..1]
+  <color:transparent>*</color> alert_sent : timestamp [0..1]
+  <color:transparent>*</color> files : list of file outcomes [0..*]
+}
+
+class "File outcome" as FileOutcome <<(V,#A57FDB) value>> {
+  <color:#D32F2F>*</color> mime_type : string [1]
+  <color:#D32F2F>*</color> size : integer, bytes [1]
+  <color:#D32F2F>*</color> deleted : boolean [1]
+}
+
+Handoff *-- "0..*" FileOutcome : files
+
+note bottom of Handoff
+  Never stored: field values, email addresses,
+  file names, IP address, user agent.
+  Purged by cron after the retention period:
+  365 days by default, 0 = never.
+end note
+@enduml
