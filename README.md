@@ -1,5 +1,7 @@
 # Webform Handoff
 
+[![CI](https://github.com/ICM-Informatique/webform_handoff/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ICM-Informatique/webform_handoff/actions/workflows/ci.yml)
+
 > **Status: under development.** There is no release yet and the module is
 > not ready for production use. Do not install it on a live site.
 

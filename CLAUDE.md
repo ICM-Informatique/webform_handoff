@@ -31,6 +31,14 @@ result.
   directly. Work happens on branches merged by pull request (merge commits
   only).
 
+## Quality
+
+The CI workflow (`.github/workflows/ci.yml`) builds a Drupal 11.4 site with
+the module and runs, from the module directory: phpcs (`phpcs.xml.dist`:
+Drupal and DrupalPractice), PHPStan at the maximum level with the strict and
+deprecation rules (`phpstan.neon.dist`), and the PHPUnit tests in
+`tests/src`. All of them must pass before a pull request is merged.
+
 ## Design rules
 
 - Use only public Webform extension points (handlers). Never replace or

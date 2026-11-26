@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Coding standards, static analysis and tests
+    # Branches of this repository are tested on push; pull requests are
+    # tested here only when they come from a fork.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SIMPLETEST_DB: sqlite://localhost//tmp/drupal-test.sqlite
+    steps:
+      - name: Check out the module
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: module
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.5'
+          extensions: gd, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        working-directory: module
+        run: composer validate --strict
+
+      - name: Build a Drupal site with the module
+        run: |
+          composer create-project drupal/recommended-project:^11.4 drupal --no-install --no-interaction
+          cd drupal
+          composer config repositories.webform_handoff '{"type": "path", "url": "../module", "options": {"symlink": false, "versions": {"drupal/webform_handoff": "1.0.x-dev"}}}'
+          composer require --no-update --no-interaction drupal/webform_handoff:1.0.x-dev
+          composer require --dev --no-update --no-interaction drupal/core-dev:^11.4 phpstan/phpstan-strict-rules:^2 phpstan/phpstan-deprecation-rules:^2
+          composer update --no-interaction --no-progress
+
+      - name: Coding standards (phpcs)
+        working-directory: drupal/web/modules/contrib/webform_handoff
+        run: ../../../../vendor/bin/phpcs
+
+      - name: Static analysis (PHPStan)
+        working-directory: drupal/web/modules/contrib/webform_handoff
+        run: ../../../../vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Tests (PHPUnit)
+        working-directory: drupal
+        run: vendor/bin/phpunit -c web/core web/modules/contrib/webform_handoff/tests
