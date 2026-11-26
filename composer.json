@@ -1,0 +1,29 @@
+{
+    "name": "drupal/webform_handoff",
+    "description": "Webform handler for Drupal: unique submission reference, immediate deletion of uploaded files, and delivery tracking without storing personal data.",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "keywords": [
+        "Drupal",
+        "webform",
+        "privacy",
+        "data minimization"
+    ],
+    "homepage": "https://github.com/ICM-Informatique/webform_handoff",
+    "authors": [
+        {
+            "name": "ICM Informatique Sàrl",
+            "role": "Maintainer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/ICM-Informatique/webform_handoff/issues",
+        "source": "https://github.com/ICM-Informatique/webform_handoff",
+        "security": "https://github.com/ICM-Informatique/webform_handoff/security/policy"
+    },
+    "require": {
+        "php": ">=8.3",
+        "drupal/core": "^11.4",
+        "drupal/webform": "^6.3"
+    }
+}

@@ -1,0 +1,7 @@
+name: Webform Handoff
+type: module
+description: 'Adds a unique reference to webform submissions sent by email, deletes uploaded files once sent and tracks delivery without storing personal data.'
+package: Webform
+core_version_requirement: ^11.4
+dependencies:
+  - webform:webform
